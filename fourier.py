@@ -42,7 +42,6 @@ def FreeSpace( f , z , wl , dx  = 1.):
     F = FFT2(f)
     
     if( abs(z) > zmax ): # Propagating using Impulse Response Function
-        print('Propagating using the Impulse Response Function...')
         x = tl.arange( -Lx/2 , Lx/2 , dx )
         y = tl.arange( -Ly/2 , Ly/2 , dx )
         X , Y = tl.meshgrid( x , y )
@@ -50,7 +49,6 @@ def FreeSpace( f , z , wl , dx  = 1.):
         G = FFT2(g) * dx * dx
         
     else: # Propagating using Optical Transfer Function, Fraunhofer Approximations
-        print('Propagating using the Optical Transfer Function...')
         fx = tl.arange( -1/( 2 * dx ) , 1/( 2 * dx ) , 1/Lx )
         fy = tl.arange( -1/( 2 * dx ) , 1/( 2 * dx ) , 1/Ly )
         FX , FY = tl.meshgrid( fx , fy )
