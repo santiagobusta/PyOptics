@@ -14,6 +14,7 @@ Contains:
 """
 
 import __tools__ as tl
+from improc import FFT2, IFFT2
 
 #%% Propagators
 
@@ -38,24 +39,24 @@ def FreeSpace( f , z , wl , dx  = 1.):
     n , m = f.shape
     Lx = dx*n ; Ly = dx*m # Square pixels
     zmax = dx*Lx/ wl
-    F = tl.fft.fftshift( tl.fft.fft2( f ) )
+    F = FFT2(f)
     
-    if( tl.abs(z) > zmax ): # Propagating using Impulse Response Function
+    if( abs(z) > zmax ): # Propagating using Impulse Response Function
         print('Propagating using the Impulse Response Function...')
         x = tl.arange( -Lx/2 , Lx/2 , dx )
         y = tl.arange( -Ly/2 , Ly/2 , dx )
         X , Y = tl.meshgrid( x , y )
         g = tl.exp( 1j * tl.pi / ( wl * z ) * ( X**2 + Y**2 ) ) / ( 1j * wl * z )
-        G = tl.fft.fftshift( tl.fft.fft2( g ) ) * dx * dx
+        G = FFT2(g) * dx * dx
         
     else: # Propagating using Optical Transfer Function, Fraunhofer Approximations
         print('Propagating using the Optical Transfer Function...')
         fx = tl.arange( -1/( 2 * dx ) , 1/( 2 * dx ) , 1/Lx )
         fy = tl.arange( -1/( 2 * dx ) , 1/( 2 * dx ) , 1/Ly )
         FX , FY = tl.meshgrid( fx , fy )
-        G = tl.exp( ( -1j * wl * tl.pi * z ) * ( FX**2 + FY**2 ) )
+        G = tl.fftshift(tl.exp( ( -1j * wl * tl.pi * z ) * ( FX**2 + FY**2 ) ))
         
-    h = tl.fft.ifft2( tl.fft.ifftshift( G * F ) )
+    h = IFFT2( F * G )
     
     return h
 

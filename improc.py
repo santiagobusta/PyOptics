@@ -80,8 +80,8 @@ def ImportImage( path , normalize = True ):
     if( tl.isfile(path) == False ):
         raise OSError('File not found')
     
-    tl.Image.open( path ).convert( 'L' )
-    f = tl.array(tl , dtype='float')
+    f = tl.Image.open( path ).convert( 'L' )
+    f = tl.array(f , dtype='float')
     
     if( normalize ):
         f = LinearNormal(f)
@@ -162,6 +162,33 @@ def Embed( f , g , x , y ):
     h[tl.int32(tl.ceil((m-mm)*0.5)+y):tl.int32(tl.ceil((m+mm)*0.5)+y),tl.int32(tl.ceil((n-nn)*0.5)+x):tl.int32(tl.ceil((m+nn)*0.5)+x)]=g
     
     return h
+
+def Resize( f , shape , ):
+    """
+    Resizes input array into input shape
+
+    ========Input=========
+    
+    f : Input 2D array
+    shape : New shape
+    
+    ========Raises========
+    
+    ValueError : If the trimming area is outside f
+    TypeError : If either f or g isn't a 2D array
+    
+    ========Output========
+    
+    g : Resized f 2D array
+
+    """
+    
+    f = LinearNormal(f)
+    f = tl.Image.fromarray(f*255)
+    g = f.resize(shape)
+    g = tl.array( g , dtype=float)
+
+    return g
 
 #%% Normalization
 
@@ -258,15 +285,19 @@ def PSNR( f , g ):
     psnr : PSNR
     
     """
-
+    
     f = tl.array(f)
     g = tl.array(g)
     
     if( tl.shape(f) != tl.shape(g) ):
         raise TypeError('f and g must be arrays of equal shape')
+        
+    if( (f==g).all() ):
+        psnr = tl.inf
+    else:
+        mse = tl.summ( abs(f - g)**2 )/tl.prod(tl.shape(f))
+        psnr = 10*tl.log10( tl.maxx(f)**2 / mse)
     
-    mse = tl.summ( abs(f - g)**2 )/tl.prod(tl.shape(f))
-    psnr = 10*tl.log10( tl.maxx(f)**2 / mse)
     return psnr
 
 #%% Binarization
@@ -292,6 +323,8 @@ def ErrDiffBin( f , T = 0.5 , b = [[1/16., 5/16., 3/16.],[7/16., 0., 0.],[0., 0.
     h[1:-1,1:-1] : Binarized input array
 
     """
+    
+    b = tl.array(b)
     
     if( tl.shape(b) != (3,3) or tl.isreal(b).all() == False ):
         raise TypeError('b has to be a 3x3 2D array')
@@ -333,6 +366,8 @@ def QZP( f , Z = 2 , s = 1):
     g : Quantized input array
     
     """
+    
+    Z = int(Z)
     
     if( Z==2 and s==1 ): g = ( f > 0.5 )*1. # Simple thresholding case 
         
@@ -376,6 +411,6 @@ def IFFT2( f ):
     h : Shifted and inverse Fourier transformed f
     
     """
-    g = tl.ifftshift( tl.ifft2( f ) )
+    g = tl.ifft2( tl.ifftshift( f ) )
     
     return g

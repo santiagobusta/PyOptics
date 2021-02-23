@@ -19,15 +19,16 @@ class Plane:
     
     def __init__( self , AO , WLO , kxO = 0 , kyO = 0 ): # These parameters define the units of measurement
         """
-        Plane wave with wavevector [kxO,kyO,sqrt((2*pi/WLO)**2 - kxO**2 - kyO**2)]
+        Plane wave with wavevector (2*pi/WLO)*[sqrt(kxO),sqrt(kyO),sqrt(1 - abs(kxO) - abs(kyO))]
         Default values for a plane wave propagating in the z axis.
+        If |kxO| + |kyO| > 1 the wave is evanescent.
         """
         self.A = complex(AO) # Amplitude
         self.WL = float(WLO) # Central wavelenght
         self.k = 2*tl.pi/WLO # Central wavenumber
-        self.kx = float(kxO) # x wavevector component
-        self.ky = float(kyO) # y wavevector component
-        self.kz = tl.sqrt(self.k**2 - kxO**2 - kyO**2) # z wavevector component
+        self.kx = float(kxO)*self.k # x wavevector component
+        self.ky = float(kyO)*self.k # y wavevector component
+        self.kz = tl.sqrt(self.k**2 - self.kx**2 - self.ky**2) # z wavevector component
         
     def value( self , x , y , z ):
         """
@@ -98,7 +99,7 @@ class Spherical:
         
         ========Input=========
         
-        x : Radial coordinate centered at wave source
+        r : Radial coordinate centered at wave source
     
         ========Output========
         
@@ -106,11 +107,9 @@ class Spherical:
         
         """
         
-        if(r == 0):
-            u = tl.inf
-            
-        else:
-            u = self.A * tl.exp(-1j*self.k*r) / r
+        u = tl.zeros_like(r, dtype='complex')
+        u[ r == 0. ] = tl.inf
+        u[ r != 0. ] = self.A * tl.exp(-1j*self.k*r[ r != 0. ]) / r[ r != 0. ]
         
         return u
     
@@ -243,11 +242,10 @@ class Gaussian:
         R : Wavefront radius of curvature at axial distance z from waist.
         
         """
-        if( z == 0 ):
-            R = tl.inf
         
-        else:
-            R = z * ( 1 + ( self.zO / z )**2 )
+        R = tl.zeros_like(z)
+        R[ z == 0. ] = tl.inf
+        R[ z != 0. ] = z[ z != 0. ] * ( 1 + ( self.zO / z[ z != 0. ] )**2 )
             
         return R
     
@@ -333,11 +331,10 @@ class HermiteGaussian:
         R : Wavefront radius of curvature at axial distance z from waist.
         
         """
-        if( z == 0 ):
-            R = tl.inf
         
-        else:
-            R = z * ( 1 + ( self.zO / z )**2 )
+        R = tl.zeros_like(z)
+        R[ z == 0. ] = tl.inf
+        R[ z != 0. ] = z[ z != 0. ] * ( 1 + ( self.zO / z[ z != 0. ] )**2 )
             
         return R
     
@@ -425,11 +422,10 @@ class LaguerreGaussian:
         R : Wavefront radius of curvature at axial distance z from waist.
         
         """
-        if( z == 0 ):
-            R = tl.inf
         
-        else:
-            R = z * ( 1 + ( self.zO / z )**2 )
+        R = tl.zeros_like(z)
+        R[ z == 0. ] = tl.inf
+        R[ z != 0. ] = z[ z != 0. ] * ( 1 + ( self.zO / z[ z != 0. ] )**2 )
             
         return R
     
@@ -468,7 +464,7 @@ class LaguerreGaussian:
         Plane lies perpendicular to z axis and has the same shape as f.
         
         ========Input=========
-    
+        
         z : Axial distance from waist
         f : 2D Array defining the output array shape
         dx : Pixel pitch (default value is unit of measurement)
@@ -528,11 +524,10 @@ class BesselGaussian:
         R : Wavefront radius of curvature at axial distance z from waist.
         
         """
-        if( z == 0 ):
-            R = tl.inf
         
-        else:
-            R = z * ( 1 + ( self.zO / z )**2 )
+        R = tl.zeros_like(z)
+        R[ z == 0. ] = tl.inf
+        R[ z != 0. ] = z[ z != 0. ] * ( 1 + ( self.zO / z[ z != 0. ] )**2 )
             
         return R
     
