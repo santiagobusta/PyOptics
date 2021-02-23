@@ -1,2 +1,2 @@
-# PyOptics
+# PyOptics Beta
 Optics python package
