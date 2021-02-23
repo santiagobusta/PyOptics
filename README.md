@@ -1,5 +1,5 @@
 # PyOptics Beta
-## Optics python package
+## Python package for computational optics
 ### Santiago Bustamante at santiago.bustamante@udea.edu.co
 
 See PyOpticsTest.ipynb to check the package utilities :)
