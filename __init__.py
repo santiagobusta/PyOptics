@@ -1,4 +1,4 @@
 import __tools__
-import improc
+import proc2d
 import beams
 import fourier

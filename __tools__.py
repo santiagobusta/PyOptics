@@ -4,8 +4,8 @@ __tools__.py
 Used tools from other modules
 """
 
-from numpy import exp, sqrt, inf, arctan, isreal, iscomplex, int32, ceil, angle, log10, log, pi, array
-from numpy import ndarray, zeros, zeros_like, ones, copy, shape, arange, meshgrid, mean, prod
+from numpy import exp, sqrt, inf, arctan, isreal, iscomplex, int32, angle, log10, log, pi, array, cos, sin
+from numpy import ndarray, zeros, zeros_like, ones, copy, shape, arange, meshgrid, mean, prod, ceil, floor
 from numpy.fft import fft2, ifft2, fftshift, ifftshift
 from numpy import min as minn
 from numpy import max as maxx

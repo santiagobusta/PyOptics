@@ -14,7 +14,7 @@ Contains:
 """
 
 import __tools__ as tl
-from improc import FFT2, IFFT2
+from proc2d import FFT2, IFFT2
 
 #%% Propagators
 
