@@ -197,9 +197,9 @@ def Gauss( sx , sy , shape , x = 0 , y = 0 , angle = 0 , use_pxc = False ):
 
 #%% Manipulation
  
-def Trim( f , g , x , y ):
+def Trim( f , shape , x , y ):
     """
-    Trims a 2D input array f. The trim is centered at (x,y) and has the same shape as g.
+    Trims a 2D input array f. The trim is centered at (x,y) with shape (shape).
     (x,y) coordinates are given in a centered cartesian frame.
 
     ========Input=========
@@ -220,11 +220,11 @@ def Trim( f , g , x , y ):
 
     """
     
-    if( len(tl.shape(f)) != 2 or len(tl.shape(g)) != 2 ):
+    if( len(tl.shape(f)) != 2 or len(shape) != 2 ):
         raise TypeError('Input and embedded arrays must be 2D')
         
     (m,n) = tl.shape(f)
-    (mm,nn) = tl.shape(g)
+    (mm,nn) = shape
     
     if( mm>m or nn>n ):
         raise ValueError('Trimmed array must be smaller than input array')
@@ -270,7 +270,7 @@ def Embed( f , g , x , y ):
     
     return h
 
-def Resize( f , shape , ):
+def Resize( f , shape ):
     """
     Resizes input array into input shape
 
