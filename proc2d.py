@@ -294,6 +294,7 @@ def Resize( f , shape ):
     f = tl.Image.fromarray(f*255)
     g = f.resize(shape)
     g = tl.array( g , dtype=float)
+    g = LinearNormal(g)
 
     return g
 
@@ -318,11 +319,18 @@ def LinearNormal( f , new_min = 0. , new_max = 1. ):
     """
 
     if tl.iscomplex(f).any():
-        g = ( abs(f) - tl.minn(abs(f)) )/( tl.maxx(abs(f)) - tl.minn(abs(f)) )*(new_max-new_min) + new_min
+        fnorm = tl.abss(f)
+        if( (fnorm == tl.mean(fnorm)).all() ):
+            g = 1.
+        else:
+            g = ( fnorm - tl.minn(fnorm) )/( tl.maxx(fnorm) - tl.minn(fnorm))*(new_max-new_min) + new_min
         g *= tl.exp(1j*tl.angle(f))
         
     else:
-        g = ( f - tl.minn(f) )/( tl.maxx(f) - tl.minn(f) )*(new_max-new_min) + new_min
+        if( (f == tl.mean(f)).all() ):
+            g = tl.ones(tl.shape(f))
+        else:
+            g = ( f - tl.minn(f) )/( tl.maxx(f) - tl.minn(f) )*(new_max-new_min) + new_min
         
     return g
 
