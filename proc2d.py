@@ -15,7 +15,7 @@ Contains:
         ~ Embed
     ~ Normalization:
         ~ LinearNormal
-        ~ QuadNormal **
+        ~ QuadNormal
         ~ SigmoidNormal
     ~ Metrics:
         ~ CC
@@ -248,7 +248,7 @@ def Embed( f , g , x , y ):
     ========Raises========
     
     ValueError : If the embedded array is outside f
-    TypeError : If either f or g isn't a 2D array
+    ValueError : If either f or g isn't a 2D array
     
     ========Output========
     
@@ -256,8 +256,8 @@ def Embed( f , g , x , y ):
 
     """
     
-    if( len(tl.shape(f)) != 2 or len(tl.shape(g)) != 2 ):
-        raise TypeError('Input and embedded arrays must be 2D')
+    if( (tl.ndim(f) , tl.ndim(g)) != (2 , 2) ):
+        raise ValueError('Input and embedded arrays must be 2D')
     
     (m,n) = tl.shape(f)
     (mm,nn) = tl.shape(g)
@@ -332,6 +332,36 @@ def LinearNormal( f , new_min = 0. , new_max = 1. ):
         else:
             g = ( f - tl.minn(f) )/( tl.maxx(f) - tl.minn(f) )*(new_max-new_min) + new_min
         
+    return g
+
+def QuadNormal( f , grid = None ):
+    """
+    Normalizes input array as in Hilbert spaces.
+    f and grid must have the same shape.
+
+    ========Input=========
+    
+    f :     Input 2D array
+    grid :  Function domain 2D array (default for square grid of unit squares)
+    
+    ========Output========
+    
+    g : Normalized input array
+    
+    """
+    
+    shape = tl.shape(f)
+    
+    if( grid == None ):
+        x = range(shape[1]) ; y = range(shape[0])
+    elif( tl.shape(grid) == tl.shape(f) ):
+        x = grid[0] ; y = grid[:,0]
+    else:
+        raise ValueError("f and grid must have the same shape")
+    
+    N2 = tl.simps(tl.simps( tl.abs(f)**2 , y  ) , x )
+    g = f/tl.sqrt(N2)
+    
     return g
 
 def SigmoidNormal( f , new_min = 0. , new_max = 1. ):
@@ -529,3 +559,64 @@ def IFFT2( f ):
     g = tl.ifft2( tl.ifftshift( f ) )
     
     return g
+
+def LowPass( f , px = 0.5 , py = 0.5 , mode = 'rect' ):
+    """
+    Low pass filter.
+    
+    ========Input=========
+    
+    f :     Input 2D array
+    px :    Defines the characteristic horizontal length of filter function
+    py :    Defines the characteristic vertical length of filter function
+    mode:   Defines the filter function
+
+    ========output========
+    
+    g : Filterted signal
+    
+    """
+    
+    shape = tl.shape(f)
+    
+    filters = {
+            'rect':Rect( px , py , shape ),
+            'ellipse':Ellipse( px , py , shape ),
+            'gauss':Gauss( px , py , shape )}
+    
+    F = FFT2( f )
+    F *= filters.get(mode)
+    g = IFFT2(F)
+
+    return g
+
+def HighPass( f , px = 0.5 , py = 0.5 , mode = 'rect' ):
+    """
+    High pass filter.
+    
+    ========Input=========
+    
+    f :     Input 2D array
+    px :    Defines the characteristic horizontal length of filter function
+    py :    Defines the characteristic vertical length of filter function
+    mode:   Defines the filter function
+
+    ========output========
+    
+    g : Filterted signal
+    
+    """
+    
+    shape = tl.shape(f)
+    
+    filters = {
+            'rect':Rect( px , py , shape ),
+            'ellipse':Ellipse( px , py , shape ),
+            'gauss':Gauss( px , py , shape )}
+    
+    F = FFT2( f )
+    F *= (1 - filters.get(mode))
+    g = IFFT2(F)
+
+    return g
+    
