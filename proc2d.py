@@ -26,8 +26,10 @@ Contains:
     ~ Bidimensional Fourier Analysis:
         ~ FFT2
         ~ IFFT2
-        ~ LowPass **
-        ~ HighPass **
+        ~ LowPass
+        ~ HighPass
+        ~ BandPass
+        ~ BandStop
 """
 
 import __tools__ as tl
