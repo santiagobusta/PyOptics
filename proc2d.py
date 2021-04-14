@@ -20,6 +20,7 @@ Contains:
     ~ Metrics:
         ~ CC
         ~ PSNR
+        ~ Entropy
     ~ Binarization:
         ~ ErrDiff
         ~ QZP
@@ -361,7 +362,7 @@ def QuadNormal( f , grid = None ):
     else:
         raise ValueError("f and grid must have the same shape")
     
-    N2 = tl.simps(tl.simps( tl.abs(f)**2 , y  ) , x )
+    N2 = tl.simps(tl.simps( tl.abss(f)**2 , y  ) , x )
     g = f/tl.sqrt(N2)
     
     return g
@@ -447,6 +448,36 @@ def PSNR( f , g ):
     
     return psnr
 
+def Entropy(f , nbits = 0):
+    """
+    Calculates entropy of array histogram
+    
+    ========input=========
+    
+    f : Input array
+    nbits : Calculate for a given number of bits
+    
+    ========output========
+    
+    S : Shannon Entropy
+    
+    """
+
+    f = tl.reshape(f, (1,tl.prod(tl.shape(f))) )[0]
+    
+    if(nbits!=0):
+        f = LinearNormal(f)
+        MAX = 2.**nbits - 1
+        f = tl.floor(f*MAX)
+    
+    pdf = tl.Series(f).value_counts().values
+    
+    pdf = pdf/tl.summ(pdf*1.)
+    
+    S = -tl.summ(pdf*tl.log2(pdf))
+    
+    return S
+
 #%% Binarization
 
 def ErrDiffBin( f , T = 0.5 , b = [[1/16., 5/16., 3/16.],[7/16., 0., 0.],[0., 0., 0.]] ):
@@ -496,6 +527,53 @@ def ErrDiffBin( f , T = 0.5 , b = [[1/16., 5/16., 3/16.],[7/16., 0., 0.],[0., 0.
             
     return h[1:-1,1:-1]
 
+def AdaptativeThresholding( f , s , T = 1 ):
+    """
+    Binarizes input 2D array using the adaptative thresholding algorithm via integral images.
+    
+    ========Input=========
+    
+    f : Real input 2D array
+    s : Sub-array size in pixels for mean calculation
+    T : Percentage to be taken from mean for thresholding
+    
+   ========Output========
+    
+    g : Binarized input array
+
+    """
+
+    n, m = f.shape
+    I = tl.zeros((n,m),dtype='float')
+    g = tl.zeros((n,m),dtype='float')
+    
+    for j in range(m):
+        S = 0
+        for i in range(n):
+            S += f[i,j]
+            I[i,j] = S
+            if j > 0:
+                I[i,j] += I[i, j-1]
+                
+    for j in range(m):
+        x1 = int(tl.floor(j - s/2));
+        if( x1 < 0 ): x1 = 0;
+        x2 = int(tl.floor(j + s/2));
+        if( x2 > m-1 ): x2 = m-1;
+        for i in range(n):
+            y1 = int(tl.floor(i - s/2));
+            if( y1 < 0 ): y1 = 0;
+            y2 = int(tl.floor(i + s/2));
+            if( y2 > n-1 ): y2 = n-1;
+            
+            A = (x2-x1)*(y2-y1)
+            S = I[y2,x2] - I[y1-1,x2] - I[y2,x1-1] + I[y1-1,x1-1]
+            if( f[i,j]*A > S*T ):
+                g[i,j] = 1
+    
+    return g
+                
+
 def QZP( f , Z = 2 , s = 1):
     """
     Step in stepwise quantization of input array into Z levels.
@@ -541,7 +619,7 @@ def FFT2( f ):
     h : Shifted and fourier transformed f
     
     """
-    g = tl.fftshift( tl.fft2( f ) )
+    g = tl.ifftshift( tl.fft2( tl.fftshift( f ) ) )
     
     return g
 
@@ -558,7 +636,7 @@ def IFFT2( f ):
     h : Shifted and inverse Fourier transformed f
     
     """
-    g = tl.ifft2( tl.ifftshift( f ) )
+    g = tl.ifftshift( tl.ifft2( tl.fftshift( f ) ) )
     
     return g
 
