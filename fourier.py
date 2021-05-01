@@ -52,7 +52,7 @@ def FreeSpace( f , z , wl , dx  = 1.):
         fx = tl.arange( -1/( 2 * dx ) , 1/( 2 * dx ) , 1/Lx )
         fy = tl.arange( -1/( 2 * dx ) , 1/( 2 * dx ) , 1/Ly )
         FX , FY = tl.meshgrid( fx , fy )
-        G = tl.fftshift(tl.exp( ( -1j * wl * tl.pi * z ) * ( FX**2 + FY**2 ) ))
+        G = tl.exp( ( -1j * wl * tl.pi * z ) * ( FX**2 + FY**2 ) )
         
     h = IFFT2( F * G )
     
