@@ -10,6 +10,8 @@ Contains:
         ~ Rect
         ~ Ellipse
         ~ Gauss
+        ~ Power
+        ~ IntImage
     ~ Manipulation:
         ~ Trim
         ~ Embed
@@ -22,7 +24,8 @@ Contains:
         ~ PSNR
         ~ Entropy
     ~ Binarization:
-        ~ ErrDiff
+        ~ ErrorDiffBin
+        ~ AdapThreshBin
         ~ QZP
     ~ Bidimensional Fourier Analysis:
         ~ FFT2
@@ -31,6 +34,7 @@ Contains:
         ~ HighPass
         ~ BandPass
         ~ BandStop
+        ~ GetRBW
 """
 
 import __tools__ as tl
@@ -39,20 +43,20 @@ import __tools__ as tl
 
 def ExportImage( f , path , normalize = True ):
     """
-    Exports real 2D input array f as an 8-bit image.
+    ~ Exports real 2D input array f as an 8-bit grayscale image.
     
     ========Input=========
     
-    f : Real 2D input array with [0,1] dynamic range
-    path : Image save path
-    normalize : Normalize input array before saving (default value for linear normalization to [0,1])
+    f :             Real 2D input array
+    path :          Image save path
+    normalize :     Normalize input array before saving (default value for linear normalization to [0,1])
     
     ========Raises========
     
     TypeError : If f isn't a real 2D array
     
     """
-    if( (tl.isreal(f).all == False) or (len(tl.shape(f)) != 2) ):
+    if( (tl.isreal(f).all == False) or (tl.ndim(f) != 2) ):
         raise TypeError('Input array must be a real 2D array')
         
     if( normalize ):
@@ -64,7 +68,7 @@ def ExportImage( f , path , normalize = True ):
     
 def ImportImage( path , normalize = True ):
     """
-    Imports image as a real 2D array
+    ~ Imports image as a real 2D array
     
     ========Input=========
 
@@ -94,11 +98,11 @@ def ImportImage( path , normalize = True ):
 
 #%% 2D Signals
     
-def Rect( w , h , shape , x = 0 , y = 0 , angle = 0 , use_pxc = False ):
+def Rect( w , h , shape , x = 0. , y = 0. , angle = 0. , use_pxc = False ):
     """
-    2D rectangular signal.
-    (x,y) coordinates are given in a centered cartesian frame.
-    angle is measured counterclockwise in radians.
+    ~ Creates a sampled 2D rectangular signal
+    ~ (x,y) coordinates are given in a centered cartesian frame
+    ~ angle is measured counterclockwise in radians
 
     ========Input=========
     
@@ -126,15 +130,15 @@ def Rect( w , h , shape , x = 0 , y = 0 , angle = 0 , use_pxc = False ):
     X = range(shape[1]) ; Y = range(shape[0])
     X, Y = tl.meshgrid(X , Y)
     
-    f = ((X-x)*tl.cos(angle) - (Y-y)*tl.sin(angle) > - w)*((X-x)*tl.cos(angle) - (Y-y)*tl.sin(angle) <= w)*((Y-y)*tl.cos(angle) + (X-x)*tl.sin(angle) > - h)*((Y-y)*tl.cos(angle) + (X-x)*tl.sin(angle) <= h)*1
+    f = ((X-x)*tl.cos(angle) - (Y-y)*tl.sin(angle) > - w)*((X-x)*tl.cos(angle) - (Y-y)*tl.sin(angle) <= w)*((Y-y)*tl.cos(angle) + (X-x)*tl.sin(angle) > - h)*((Y-y)*tl.cos(angle) + (X-x)*tl.sin(angle) <= h)*1.
     
     return f
 
-def Ellipse( a , b , shape , x = 0 , y = 0 , angle = 0 , use_pxc = False ):
+def Ellipse( a , b , shape , x = 0. , y = 0. , angle = 0. , use_pxc = False ):
     """
-    2D ellipse signal.
-    (x,y) coordinates are given in a centered cartesian frame.
-    angle is measured counterclockwise in radians.
+    ~ Creates a sampled 2D ellipse signal
+    ~ (x,y) coordinates are given in a centered cartesian frame
+    ~ angle is measured counterclockwise in radians
 
     ========Input=========
     
@@ -152,23 +156,25 @@ def Ellipse( a , b , shape , x = 0 , y = 0 , angle = 0 , use_pxc = False ):
 
     """
     
-    x += 0.5 ; y += 0.5
-    
-    if( use_pxc == False ):
+    if( not use_pxc ):
+        x += 0.5 ; y += 0.5
         a *= shape[1] ; b *= shape[0]
         x *= shape[1] ; y *= shape[0]
-
+        
+    else:
+        x += 0.5*shape[1] ; y += 0.5*shape[0]
+    
     X = range(shape[1]) ; Y = range(shape[0])
     X, Y = tl.meshgrid(X , Y)
     
-    f = ((((X-x)*tl.cos(angle) - (Y-y)*tl.sin(angle))/a)**2 + (((Y-y)*tl.cos(angle) + (X-x)*tl.sin(angle))/b)**2 < 1)*1
+    f = ((((X-x)*tl.cos(angle) - (Y-y)*tl.sin(angle))/a)**2 + (((Y-y)*tl.cos(angle) + (X-x)*tl.sin(angle))/b)**2 < 1)*1.
     
     return f
 
-def Gauss( sx , sy , shape , x = 0 , y = 0 , angle = 0 , use_pxc = False ):
+def Gauss( sx , sy , shape , x = 0. , y = 0. , angle = 0. , use_pxc = False ):
     """
-    2D Gaussian distribution signal.
-    (x,y) coordinates are given in a centered cartesian frame.
+    ~ Creates a sampled 2D Gaussian distribution signal
+    ~ (x,y) coordinates are given in a centered cartesian frame
 
     ========Input=========
     
@@ -197,49 +203,118 @@ def Gauss( sx , sy , shape , x = 0 , y = 0 , angle = 0 , use_pxc = False ):
     
     f = tl.exp( - 0.5 * ( ( (X-x)*tl.cos(angle) - (Y-y)*tl.sin(angle) ) / sx ) ** 2 - 0.5 * ( ( (Y-y)*tl.cos(angle) + (X-x)*tl.sin(angle) ) / sy ) ** 2 )
     return f
-
-#%% Manipulation
- 
-def Trim( f , shape , x , y ):
+    
+def Power( f , dx = 1. , dy = None ):
     """
-    Trims a 2D input array f. The trim is centered at (x,y) with shape (shape).
-    (x,y) coordinates are given in a centered cartesian frame.
-
+    ~ Calculates the power of f (essentially its quadrature)
+    
     ========Input=========
     
-    f : 2D input array from which the trim is taken
-    g : 2D array defining the trim shape
-    x : x cartesian coordinate of the trimming center measured from input array's center
-    y : y cartesian coordinate of the trimming center measured from input array's center
+    f :     2D input array
+    dx :    Horizontal sampling interval (Default value is unit of measurement)
+    dy :    Vertical sampling interval (Default value is square pixels)
     
     ========Raises========
     
-    ValueError : If the trimming area is outside f
-    TypeError : If either f or g isn't a 2D array
+    TypeError :     If input array isn't 2D
+
+    ========Output========
     
+    P : Power
+
+    """
+    
+    if( tl.ndim(f) != 2):
+        raise TypeError('Input array must be 2D')
+    
+    if( dy == None ):
+        dy = dx
+    
+    P = tl.simps(tl.simps( tl.abss(f)**2 , dx = dy  ) , dx = dx )
+    
+    return P
+    
+def IntImage( f ):
+    """
+    ~ Calculates the integral image of f
+    
+    ========Input=========
+    
+    f :     2D input array
+    
+    ========Raises========
+    
+    TypeError :     If input array isn't 2D
+
+    ========Output========
+    
+    I :     Integral image
+
+    """
+    
+    if( tl.ndim(f) != 2):
+        raise TypeError('Input array must be 2D')
+    
+    n , m = f.shape
+    I = tl.zeros((n,m),dtype='float')
+    
+    for j in range(m):
+        
+        S = 0
+        for i in range(n):
+            S += f[i,j]
+            I[i,j] = S
+            if j > 0:
+                I[i,j] += I[i, j-1]
+                
+    return I
+
+#%% Manipulation
+ 
+def Trim( f , shape , x = 0. , y = 0. ):
+    """
+    ~ Trims an array from f centered at (x,y) with shape shape
+    ~ (x,y) coordinates are given in a centered cartesian frame
+
+    ========Input=========
+    
+    f :         2D input array from which the trim is taken
+    shape :     Trimming shape
+    x :         x cartesian coordinate of the trimming center measured from input array's center
+    y :         y cartesian coordinate of the trimming center measured from input array's center
+    
+    ========Raises========
+    
+    TypeError :     If input array isn't 2D
+    TypeError :     If trimming shape isn't 2D
+    ValueError :    If trimming shape is bigger than input array's shape
+
     ========Output========
     
     h : Trimmed 2D array
 
     """
     
-    if( len(tl.shape(f)) != 2 or len(shape) != 2 ):
-        raise TypeError('Input and embedded arrays must be 2D')
+    if( tl.ndim(f) != 2):
+        raise TypeError('Input array must be 2D')
+        
+    if( len(shape) != 2):
+        raise TypeError('Trimming shape must be 2D')
         
     (m,n) = tl.shape(f)
     (mm,nn) = shape
     
     if( mm>m or nn>n ):
-        raise ValueError('Trimmed array must be smaller than input array')
+        raise ValueError('Trimming array must be smaller than input array')
         
     h = f[tl.int32(tl.floor((m-mm)*0.5)+y):tl.int32(tl.floor((m+mm)*0.5)+y),tl.int32(tl.floor((n-nn)*0.5)+x):tl.int32(tl.floor((m+nn)*0.5)+x)]
     
     return h
 
-def Embed( f , g , x , y ):
+def Embed( f , g , x = 0. , y = 0. ):
     """
-    Embeds g into f centered at (x,y).
-    (x,y) coordinates are given in a cartesian frame centered in f.
+    ~ Embeds g onto f centered at (x,y)
+    ~ (x,y) coordinates are given in a centered cartesian frame
 
     ========Input=========
     
@@ -249,9 +324,9 @@ def Embed( f , g , x , y ):
     y : y cartesian coordinate of the embedding center measured from input array's center
     
     ========Raises========
-    
-    ValueError : If the embedded array is outside f
-    ValueError : If either f or g isn't a 2D array
+
+    ValueError : If either f or g isn't a 2D array    
+    ValueError : If g is bigger than f
     
     ========Output========
     
@@ -260,13 +335,13 @@ def Embed( f , g , x , y ):
     """
     
     if( (tl.ndim(f) , tl.ndim(g)) != (2 , 2) ):
-        raise ValueError('Input and embedded arrays must be 2D')
+        raise ValueError('Input and embedding arrays must be 2D')
     
     (m,n) = tl.shape(f)
     (mm,nn) = tl.shape(g)
     
     if( mm>m or nn>n ):
-        raise ValueError('Embedded array must be smaller than input array')
+        raise ValueError('Embedding array must be smaller than input array')
     
     h = tl.copy(f)
     h[tl.int32(tl.floor((m-mm)*0.5)+y):tl.int32(tl.floor((m+mm)*0.5)+y),tl.int32(tl.floor((n-nn)*0.5)+x):tl.int32(tl.floor((m+nn)*0.5)+x)]=g
@@ -275,17 +350,12 @@ def Embed( f , g , x , y ):
 
 def Resize( f , shape ):
     """
-    Resizes input array into input shape
+    ~ Resizes f to shape
 
     ========Input=========
     
-    f : Input 2D array
+    f :     Input 2D array
     shape : New shape
-    
-    ========Raises========
-    
-    ValueError : If the trimming area is outside f
-    TypeError : If either f or g isn't a 2D array
     
     ========Output========
     
@@ -295,7 +365,7 @@ def Resize( f , shape ):
     
     f = LinearNormal(f)
     f = tl.Image.fromarray(f*255)
-    g = f.resize(shape)
+    g = f.resize(shape) # i'm sorry about this
     g = tl.array( g , dtype=float)
     g = LinearNormal(g)
 
@@ -305,9 +375,8 @@ def Resize( f , shape ):
 
 def LinearNormal( f , new_min = 0. , new_max = 1. ):
     """
-    Linearly normalizes input array to interval [new_min,new_max].
-    If the input array is complex, only affects its norm.
-    Default values for [0,1] normalization.
+    ~ Linearly normalizes f to interval [new_min,new_max]
+    ~ If the input array is complex, only affects its norm
     
     ========Input=========
     
@@ -337,15 +406,16 @@ def LinearNormal( f , new_min = 0. , new_max = 1. ):
         
     return g
 
-def QuadNormal( f , grid = None ):
+def QuadNormal( f , N = 1. , dx = 1. , dy = None ):
     """
-    Normalizes input array as in Hilbert spaces.
-    f and grid must have the same shape.
+    ~ Linearly normalizes f quadrature to N
 
     ========Input=========
     
     f :     Input 2D array
-    grid :  Function domain 2D array (default for square grid of unit squares)
+    N :     New quadrature value
+    dx :    Horizontal sampling interval (default value is unit of measurement)
+    dy :    Vertical sampling interval (default value for square sampling)
     
     ========Output========
     
@@ -353,25 +423,19 @@ def QuadNormal( f , grid = None ):
     
     """
     
-    shape = tl.shape(f)
+    if( dy == None ):
+        dy = dx
+
+    P = Power( f , dx , dy)
     
-    if( grid == None ):
-        x = range(shape[1]) ; y = range(shape[0])
-    elif( tl.shape(grid) == tl.shape(f) ):
-        x = grid[0] ; y = grid[:,0]
-    else:
-        raise ValueError("f and grid must have the same shape")
-    
-    N2 = tl.simps(tl.simps( tl.abss(f)**2 , y  ) , x )
-    g = f/tl.sqrt(N2)
+    g = tl.sqrt(N/P)*f
     
     return g
 
 def SigmoidNormal( f , new_min = 0. , new_max = 1. ):
     """
-    Normalizes input array to interval [new_min,new_max] using a sigmoid function.
-    If the input array is complex, only affects its norm.
-    Default values for [0,1] normalization.
+    ~ Normalizes f to interval [new_min,new_max] using a sigmoid function
+    ~ If the input array is complex, only affects its norm
     
     ========Input=========
     
@@ -398,8 +462,8 @@ def SigmoidNormal( f , new_min = 0. , new_max = 1. ):
 
 def CC( f , g ):
     """
-    Calculates correlation coefficient between two arrays.
-    Works as corr2 MATLAB function.
+    ~ Calculates correlation coefficient between two arrays
+    ~ Works similar to corr2 MATLAB function
     
     ========input=========
     
@@ -421,7 +485,7 @@ def CC( f , g ):
 
 def PSNR( f , g ):
     """
-    Calculates peak signal-to-noise ratio of an array and its noisy approximation
+    ~ Calculates peak signal-to-noise ratio of an array and its noisy approximation
     
     ========input=========
     
@@ -450,7 +514,7 @@ def PSNR( f , g ):
 
 def Entropy(f , nbits = 0):
     """
-    Calculates entropy of array histogram
+    ~ Calculates entropy of array histogram
     
     ========input=========
     
@@ -480,9 +544,9 @@ def Entropy(f , nbits = 0):
 
 #%% Binarization
 
-def ErrDiffBin( f , T = 0.5 , b = [[1/16., 5/16., 3/16.],[7/16., 0., 0.],[0., 0., 0.]] ):
+def ErrorDiffBin( f , T = 0.5 , b = [[1/16., 5/16., 3/16.],[7/16., 0., 0.],[0., 0., 0.]] ):
     """
-    Binarizes input 2D array using the Error-Diffusion algorithm.
+    ~ Binarizes input 2D array using the Error-Diffusion algorithm.
     Barnard E. Optimal error diffusion for computer-generated holograms. J Opt Soc Am A 1988;5:1803-17.
     
     ========Input=========
@@ -527,9 +591,9 @@ def ErrDiffBin( f , T = 0.5 , b = [[1/16., 5/16., 3/16.],[7/16., 0., 0.],[0., 0.
             
     return h[1:-1,1:-1]
 
-def AdaptativeThresholding( f , s , T = 1 ):
+def AdapThreshBin( f , s , T = 1 ):
     """
-    Binarizes input 2D array using the adaptative thresholding algorithm via integral images.
+    ~ Binarizes input 2D array using the adaptative thresholding algorithm using integral images
     
     ========Input=========
     
@@ -544,16 +608,8 @@ def AdaptativeThresholding( f , s , T = 1 ):
     """
 
     n, m = f.shape
-    I = tl.zeros((n,m),dtype='float')
+    I = IntImage(f)
     g = tl.zeros((n,m),dtype='float')
-    
-    for j in range(m):
-        S = 0
-        for i in range(n):
-            S += f[i,j]
-            I[i,j] = S
-            if j > 0:
-                I[i,j] += I[i, j-1]
                 
     for j in range(m):
         x1 = int(tl.floor(j - s/2));
@@ -576,8 +632,8 @@ def AdaptativeThresholding( f , s , T = 1 ):
 
 def QZP( f , Z = 2 , s = 1):
     """
-    Step in stepwise quantization of input array into Z levels.
-    Default values for thresholding.
+    ~ Step in stepwise quantization of f into Z levels
+    ~ Default values makes this function equivalent to thresholding
     Wyrowski F. Iterative quantization of digital amplitude holograms. Appl Opt 1989;28:3864-70.
     
     ========Input=========
@@ -608,7 +664,7 @@ def QZP( f , Z = 2 , s = 1):
 
 def FFT2( f ):
     """
-    Fast bidimensional Fourier transforms input array and shifts zero-frequency to center.
+    ~ Fast bidimensional Fourier transforms input array and shifts zero-frequency to center
     
     ========Input=========
     
@@ -619,13 +675,13 @@ def FFT2( f ):
     h : Shifted and fourier transformed f
     
     """
-    g = tl.ifftshift( tl.fft2( tl.fftshift( f ) ) )
+    g = tl.ifftshift( tl.fft2( tl.fftshift( f ) ) )/tl.sqrt(tl.prod(tl.shape(f)))
     
     return g
 
 def IFFT2( f ):
     """
-    Inverse fast bidimensional Fourier transforms input array and shifts zero-frequency to center.
+    ~ Inverse fast bidimensional Fourier transforms input array and shifts zero-frequency to center
     
     ========Input=========
     
@@ -636,20 +692,20 @@ def IFFT2( f ):
     h : Shifted and inverse Fourier transformed f
     
     """
-    g = tl.ifftshift( tl.ifft2( tl.fftshift( f ) ) )
+    g = tl.ifftshift( tl.ifft2( tl.fftshift( f ) ) )*tl.sqrt(tl.prod(tl.shape(f)))
     
     return g
 
-def LowPass( f , px = 0.5 , py = 0.5 , mode = 'rect' ):
+def LowPassF( f , px = 0.5 , py = 0.5 , mask = 'rect' ):
     """
-    Low pass filter.
+    ~ Low pass filter
     
     ========Input=========
     
     f :     Input 2D array
     px :    Defines the characteristic horizontal length of filter function
     py :    Defines the characteristic vertical length of filter function
-    mode:   Defines the filter function
+    mask :  Defines the filter function
 
     ========output========
     
@@ -665,25 +721,25 @@ def LowPass( f , px = 0.5 , py = 0.5 , mode = 'rect' ):
             'gauss':Gauss( px , py , shape )}
     
     F = FFT2( f )
-    F *= filters.get(mode)
+    F *= filters.get(mask)
     g = IFFT2(F)
 
     return g
 
-def HighPass( f , px = 0.5 , py = 0.5 , mode = 'rect' ):
+def HighPassF( f , px = 0.5 , py = 0.5 , mask = 'rect' ):
     """
-    High pass filter.
+    ~ High pass filter
     
     ========Input=========
     
     f :     Input 2D array
-    px :    Defines the characteristic horizontal length of filter function
-    py :    Defines the characteristic vertical length of filter function
-    mode:   Defines the filter function
+    px :    Characteristic horizontal length of filter function
+    py :    Characteristic vertical length of filter function
+    mask :  Filter function
 
     ========output========
     
-    g : Filterted signal
+    g : Filtered signal
     
     """
     
@@ -695,8 +751,41 @@ def HighPass( f , px = 0.5 , py = 0.5 , mode = 'rect' ):
             'gauss':Gauss( px , py , shape )}
     
     F = FFT2( f )
-    F *= (1 - filters.get(mode))
+    F *= (1. - filters.get(mask))
     g = IFFT2(F)
 
     return g
+
+def GetRBW( f , dx = 1. , dy = None , p = 0.98 ):
+    """
+    ~ Approximately calculates full radial bandwidth
+    ~ This is not a verified numerical method just something I made up
+    
+    ========Input=========
+    
+    f :         Input 2D array
+    p :         Effectiveness parameter
+    dx :        Horizontal sampling interval (Default value is unit of measurement)
+    dy :        Vertical sampling interval (Default for square sampling)
+
+    ========output========
+    
+    RBW :       Full radial bandwidth.
+    
+    """
+    
+    if( dy == None ):
+        dy = dx
+    
+    n , m = tl.shape(f)
+    M = max([n,m])
+        
+    F = FFT2(f)
+    P = Power(F) # Total power
+    fr = tl.arange(1,M+1) # Radial frequency in pixels
+    Pr = [Power( F*Ellipse(fri,fri,(n,m),use_pxc = True) ) for fri in fr ] # Power as function of radial distance in the Fourier domain
+    RBW = 2*max(fr[Pr <= p*P])*max([1./dx,1./dy])
+    
+    return RBW
+    
     
