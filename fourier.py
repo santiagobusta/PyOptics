@@ -87,8 +87,8 @@ def FresnelIR( f , z , wl , dx ):
 
 def FresnelCS( f , z , wl , dx  = 1., SBC = False):
     """
-    ~ Propagates input 2D array in free space using the Fresnel diffraction integral via convolution.
-    ~ Samples either the Impulse Response or the Transfer Function given the critic sampling criterion.
+    ~ Propagates input 2D array in free space using the critical sampling criterion
+    ~ Samples either the Impulse Response or the Transfer Function given the critic sampling criterion
     Voelz D. Computational Fourier Optics: A MATLAB Tutorial. 2011.
     
     ========Input=========
@@ -133,6 +133,57 @@ def FresnelCS( f , z , wl , dx  = 1., SBC = False):
     h = IFFT2( F * G )
     
     return h
+
+def Fresnel2S( f , z , wl , L1 , L2):
+    """
+    ~ Propagates input 2D array in free space using the two-step Fresnel propagator
+    Voelz D. Computational Fourier Optics: A MATLAB Tutorial. 2011.
+    
+    ========Input=========
+    
+    f :     Input complex amplitude profile (2D complex array)
+    z :     Propagation distance
+    wl :    Central wavelenght of the field
+    L1 :    Input sample plane side lenght
+    L2 :    Output sample plane side lenght
+    
+    ========Output========
+    
+    h :     Propagated complex amplitude profile (2D complex array)
+    
+    """
+    
+    if( tl.ndim(f) != 2 ):
+        raise TypeError("Input array must be a 2D square array")
+    
+    m , n = tl.shape(f)
+    
+    if( m != n ):
+        raise ValueError("Input array must be a 2D square array")
+    
+    k = 2*tl.pi/wl
+    
+    # Source plane
+    dx1 = L1/m
+    x1 = tl.arange(-L1/2.,L1/2.,dx1)
+    X , Y = tl.meshgrid(x1,x1)
+    F = f*tl.exp(1j*k/(2.*z*L1)*(L1-L2)*(X**2+Y**2))
+    F = tl.fft.fft2(tl.fft.fftshift(F))
+    
+    # Dummy plane
+    fx1 = tl.arange(-1./(2*dx1) , 1./(2*dx1) , 1./L1)
+    fx1 = tl.fft.fftshift(fx1)
+    FX1 , FY1 = tl.meshgrid(fx1,fx1)
+    G = F*tl.exp(-1j*tl.pi*wl*z*L1/L2*(FX1**2+FY1**2))
+    g = tl.fft.ifftshift(tl.fft.ifft2(G))
+    
+    # Observation plane
+    dx2 = L2/m
+    x2 = tl.arange(-L2/2.,L2/2.,dx2)
+    X , Y = tl.meshgrid( x2 , x2 )
+    g = (L2/L1)*g*tl.exp(-1j*k/(2.*z*L2)*(L1-L2)*(X**2+Y**2))
+    g = g*(dx1/dx2)**2
+    return g
 
 #%% Elements
     

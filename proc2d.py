@@ -230,7 +230,7 @@ def Power( f , dx = 1. , dy = None ):
     if( dy == None ):
         dy = dx
     
-    P = tl.simps(tl.simps( tl.abss(f)**2 , dx = dy  ) , dx = dx )
+    P = tl.summ( tl.abss(f)**2 )*dx*dy
     
     return P
     
@@ -662,7 +662,7 @@ def QZP( f , Z = 2 , s = 1):
 
 #%% Bidimensional Fourier Analysis
 
-def FFT2( f ):
+def FFT2( f , dx = 1. , dy = 1. ):
     """
     ~ Fast bidimensional Fourier transforms input array and shifts zero-frequency to center
     
@@ -675,11 +675,11 @@ def FFT2( f ):
     h : Shifted and fourier transformed f
     
     """
-    g = tl.ifftshift( tl.fft2( tl.fftshift( f ) ) )/tl.sqrt(tl.prod(tl.shape(f)))
+    g = tl.ifftshift( tl.fft2( tl.fftshift( f ) ) )*dx*dy
     
     return g
 
-def IFFT2( f ):
+def IFFT2( f , dx = 1. , dy = 1. ):
     """
     ~ Inverse fast bidimensional Fourier transforms input array and shifts zero-frequency to center
     
@@ -692,7 +692,7 @@ def IFFT2( f ):
     h : Shifted and inverse Fourier transformed f
     
     """
-    g = tl.ifftshift( tl.ifft2( tl.fftshift( f ) ) )*tl.sqrt(tl.prod(tl.shape(f)))
+    g = tl.ifftshift( tl.ifft2( tl.fftshift( f ) ) )/(dx*dy)
     
     return g
 
