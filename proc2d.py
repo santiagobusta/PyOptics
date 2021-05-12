@@ -263,9 +263,10 @@ def IntImage( f ):
         S = 0
         for i in range(n):
             S += f[i,j]
-            I[i,j] = S
-            if j > 0:
-                I[i,j] += I[i, j-1]
+            if(j==0):
+                I[i,j] = S
+            else:
+                I[i,j] = I[i, j-1] + S
                 
     return I
 
@@ -307,7 +308,7 @@ def Trim( f , shape , x = 0. , y = 0. ):
     if( mm>m or nn>n ):
         raise ValueError('Trimming array must be smaller than input array')
         
-    h = f[tl.int32(tl.floor((m-mm)*0.5)+y):tl.int32(tl.floor((m+mm)*0.5)+y),tl.int32(tl.floor((n-nn)*0.5)+x):tl.int32(tl.floor((m+nn)*0.5)+x)]
+    h = f[tl.int32(tl.floor((m-mm)*0.5)+y):tl.int32(tl.floor((m+mm)*0.5)+y),tl.int32(tl.floor((n-nn)*0.5)+x):tl.int32(tl.floor((n+nn)*0.5)+x)]
     
     return h
 
@@ -338,13 +339,14 @@ def Embed( f , g , x = 0. , y = 0. ):
         raise ValueError('Input and embedding arrays must be 2D')
     
     (m,n) = tl.shape(f)
+
     (mm,nn) = tl.shape(g)
     
     if( mm>m or nn>n ):
         raise ValueError('Embedding array must be smaller than input array')
     
-    h = tl.copy(f)
-    h[tl.int32(tl.floor((m-mm)*0.5)+y):tl.int32(tl.floor((m+mm)*0.5)+y),tl.int32(tl.floor((n-nn)*0.5)+x):tl.int32(tl.floor((m+nn)*0.5)+x)]=g
+    h = f.copy()
+    h[tl.int32(tl.floor((m-mm)*0.5)+y):tl.int32(tl.floor((m+mm)*0.5)+y),tl.int32(tl.floor((n-nn)*0.5)+x):tl.int32(tl.floor((n+nn)*0.5)+x)]=g
     
     return h
 
@@ -544,7 +546,7 @@ def Entropy(f , nbits = 0):
 
 #%% Binarization
 
-def ErrorDiffBin( f , T = 0.5 , b = [[1/16., 5/16., 3/16.],[7/16., 0., 0.],[0., 0., 0.]] ):
+def ErrDiffBin( f , T = 0.5 , b = [[1/16., 5/16., 3/16.],[7/16., 0., 0.],[0., 0., 0.]] ):
     """
     ~ Binarizes input 2D array using the Error-Diffusion algorithm.
     Barnard E. Optimal error diffusion for computer-generated holograms. J Opt Soc Am A 1988;5:1803-17.
@@ -623,8 +625,11 @@ def AdapThreshBin( f , s , T = 1 ):
             if( y2 > n-1 ): y2 = n-1;
             
             A = (x2-x1)*(y2-y1)
-            S = I[y2,x2] - I[y1-1,x2] - I[y2,x1-1] + I[y1-1,x1-1]
-            if( f[i,j]*A > S*T ):
+            S = I[y2,x2]
+            if(x1 > 0): S += -I[y2,x1-1]
+            if(y1 > 0): S += -I[y1-1,x2]
+            if(x1 > 0 and y1 > 0): S += I[y1-1,x1-1]
+            if( f[i,j] > S*T/A ):
                 g[i,j] = 1
     
     return g
