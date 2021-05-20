@@ -243,7 +243,7 @@ def Lens( F , R , wl , shape , dx = 1.):
     if( len(shape) != 2 ):
         raise TypeError('Shape must be 2D')
     
-    n , m = tl.shape( shape )
+    n , m = shape
     x = tl.arange( -m*dx/2 , m*dx/2 , dx ); y = tl.arange( -n*dx/2 , n*dx/2 , dx )
     X , Y = tl.meshgrid( x , y )
     t = tl.exp(-1j*(tl.pi/(wl*F))*(X**2+Y**2))

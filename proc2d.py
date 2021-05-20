@@ -509,7 +509,7 @@ def PSNR( f , g ):
     if( (f==g).all() ):
         psnr = tl.inf
     else:
-        mse = tl.summ( abs(f - g)**2 )/tl.prod(tl.shape(f))
+        mse = tl.mean( abs(f - g)**2 )
         psnr = 10*tl.log10( tl.maxx(f)**2 / mse)
     
     return psnr
