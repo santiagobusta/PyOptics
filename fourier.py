@@ -9,10 +9,10 @@ Contains:
         ~ FresnelTF
         ~ FresnelIR
         ~ FresnelCSC
-        ~ Fresnel2S*
-        ~ Fraunhofer*
+        ~ Fresnel2S
+        ~ Fraunhofer
     ~ Elements:
-        ~ Tilt*
+        ~ Tilt
         ~ Pupil
         ~ Lens
         ~ LSL* (light sword lens)
@@ -44,7 +44,7 @@ def FresnelTF( f , z , wl , dx ):
     h :     Propagated complex amplitude profile (2D complex array)
     """
     
-    n , m = f.shape
+    n , m = tl.shape(f)
     Lx = dx*n ; Ly = dx*m 
     F = FFT2(f)
     fx = tl.arange( -1/( 2 * dx ) , 1/( 2 * dx ) , 1/Lx )
@@ -73,7 +73,7 @@ def FresnelIR( f , z , wl , dx ):
     
     """
     
-    n , m = f.shape
+    n , m = tl.shape(f)
     Lx = dx*n ; Ly = dx*m
     F = FFT2(f)
     x = tl.arange( -Lx/2 , Lx/2 , dx )
@@ -183,9 +183,72 @@ def Fresnel2S( f , z , wl , L1 , L2):
     X , Y = tl.meshgrid( x2 , x2 )
     g = (L2/L1)*g*tl.exp(-1j*k/(2.*z*L2)*(L1-L2)*(X**2+Y**2))
     g = g*(dx1/dx2)**2
+    
     return g
 
+def Fraunhofer( f , z , wl , dx = 1.):
+    """
+    ~ Propagates input 2D array in free space using the Fraunhofer propagator
+    Voelz D. Computational Fourier Optics: A MATLAB Tutorial. 2011.
+    
+    ========Input=========
+    
+    f :     Input complex amplitude profile (2D complex array)
+    z :     Propagation distance
+    wl :    Central wavelenght of the field
+    dx :    Sampling interval (default value is unit of measurement)
+    
+    ========Output========
+    
+    g  :    Propagated complex amplitude profile (2D complex array)
+    oL :    Observation plane side lenght
+    
+    """
+    
+    n, m = tl.shape(f)
+    oL = wl*z/dx # Observation plane side lenght
+    odx = oL/m ; ody = oL/n # Observation plane sample interval
+    x = tl.arange(-oL/2,oL/2,odx) ; y = tl.arange(-oL/2,oL/2,ody)
+    X , Y = tl.meshgrid(x,y)
+    
+    g = -1j/(wl*z)*tl.exp(1j*tl.pi/(wl*z)*(X**2+Y**2))
+    g = g*FFT2(f)*dx*dx
+    
+    return g, oL
+
 #%% Elements
+    
+def Tilt( alpha , theta , wl , shape , dx = 1.):
+    """
+    ~ Simulates the trasmittance function of a tilt (a prism for instance)
+    
+    ========Input=========
+    
+    alpha :     Tilt polar angle
+    theta :     Tilt azimuth angle
+    wl :        Central wavelenght
+    shape :     Array shape
+    dx :        Sampling interval (default value is unit of measurement)
+    
+    ========Raises=========
+    
+    TypeError:  If f isn't a 2D array
+    
+    ========Output========
+    
+    t :     Pinhole transmittance
+    
+    """
+
+    if( len(shape) != 2 ):
+        raise TypeError('f must be a 2D array')
+    
+    n , m = shape
+    x = tl.arange( -m*dx/2 , m*dx/2 , dx ); y = tl.arange( -n*dx/2 , n*dx/2 , dx )
+    X , Y = tl.meshgrid( x , y )
+    t = tl.exp(2j*tl.pi/wl*(X*tl.cos(theta) + Y*tl.sin(theta))*tl.tan(alpha))
+    
+    return t
     
 def Pupil( R , shape , dx = 1.):
     """
