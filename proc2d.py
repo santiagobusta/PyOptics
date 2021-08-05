@@ -485,7 +485,7 @@ def CC( f , g ):
     cc = cr / tl.sqrt( ( tl.summ( abs(f - tl.mean(f))**2 ) ) * ( tl.summ( abs(g - tl.mean(g))**2 ) ) )
     return cc
 
-def PSNR( f , g ):
+def PSNR( f , g , max_val = None):
     """
     ~ Calculates peak signal-to-noise ratio of an array and its noisy approximation
     
@@ -493,6 +493,7 @@ def PSNR( f , g ):
     
     f : Input noise-free array
     g : Input noisy approximation array
+    max_val : Maximum pixel value
     
     ========output========
     
@@ -506,11 +507,13 @@ def PSNR( f , g ):
     if( tl.shape(f) != tl.shape(g) ):
         raise TypeError('f and g must be arrays of equal shape')
         
+    if( max_val == None ): max_val = tl.maxx([f,g])
+        
     if( (f==g).all() ):
         psnr = tl.inf
     else:
-        mse = tl.mean( abs(f - g)**2 )
-        psnr = 10*tl.log10( tl.maxx(f)**2 / mse)
+        mse = tl.mean(tl.abss(f-g)**2)
+        psnr = 10*tl.log10( max_val**2 / mse)
     
     return psnr
 
