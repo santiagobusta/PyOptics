@@ -13,6 +13,6 @@ from numpy import sum as summ
 from numpy import abs as abss
 from pandas import Series
 from scipy.special import eval_hermite, eval_genlaguerre, jv
-from scipy.integrate import simps
+from scipy.integrate import simpson
 from PIL import Image
 from os.path import isdir, isfile
