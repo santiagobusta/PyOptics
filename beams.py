@@ -206,7 +206,7 @@ class Bessel:
         x = tl.arange( -m*dx/2 , m*dx/2 , dx ); y = tl.arange( -n*dx/2 , n*dx/2 , dx )
         X , Y = tl.meshgrid( x , y )
         R = tl.sqrt(X**2 + Y**2)
-        P = tl.arctan(Y/X)
+        P = tl.arctan2(Y,X)
         g = self.value( R , P , z )
         
         return g

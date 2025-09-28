@@ -8,7 +8,7 @@ Contains:
         ~ AngularIR*
         ~ FresnelTF
         ~ FresnelIR
-        ~ FresnelCSC
+        ~ FresnelCS
         ~ Fresnel2S
         ~ Fraunhofer
     ~ Elements:
