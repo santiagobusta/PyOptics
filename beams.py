@@ -3,7 +3,7 @@ beams.py
 
 Beam optics module
 Contains:
-    \ Beams:
+    ~ Beams:
         ~ Plane
         ~ Spherical
         ~ Bessel

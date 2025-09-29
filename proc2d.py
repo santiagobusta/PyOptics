@@ -683,7 +683,7 @@ def FFT2( f , dx = 1. , dy = 1. ):
     h : Shifted and fourier transformed f
     
     """
-    g = tl.ifftshift( tl.fft2( tl.fftshift( f ) ) )*dx*dy
+    g = tl.ifftshift( tl.fft2( tl.fftshift( f ) ) )*tl.sqrt(dx*dy)
     
     return g
 
@@ -700,7 +700,7 @@ def IFFT2( f , dx = 1. , dy = 1. ):
     h : Shifted and inverse Fourier transformed f
     
     """
-    g = tl.ifftshift( tl.ifft2( tl.fftshift( f ) ) )/(dx*dy)
+    g = tl.ifftshift( tl.ifft2( tl.fftshift( f ) ) )/tl.sqrt(dx*dy)
     
     return g
 
